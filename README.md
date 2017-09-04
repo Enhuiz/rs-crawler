@@ -6,5 +6,5 @@ A crawler for the meta data of remote sensing imagery sold online.
 ### 1. Install python3, pip3
 ### 2. Install requirements
 ```
-pip3 install -r requirements.txt
+$ pip3 install -r requirements.txt
 ```
