@@ -9,11 +9,11 @@ import os
 import argparse
 
 class Task(threading.Thread):
-    def __init__(self, date, output_folder):
+    def __init__(self, datestr, output_file):
         super().__init__()
         self.__results = []
-        self.__datestr = date.strftime('%Y-%m-%d')
-        self.__output_folder = output_folder
+        self.__datestr = datestr
+        self.__output_file = output_file
 
     def log(self, msg):
         print('{}: {}'.format(self.__datestr, msg))
@@ -28,7 +28,7 @@ class Task(threading.Thread):
 
         self.log('Downloading')
         while self.open:
-            timer = threading.Timer(2, self.__close)
+            timer = threading.Timer(7, self.__close)
             timer.start()
             try:
                 msg = self.ws.recv()
@@ -44,7 +44,7 @@ class Task(threading.Thread):
 
     def __on_close(self, ws):
         df = pd.DataFrame(self.__results)
-        df.to_csv(os.path.join(self.__output_folder, self.__datestr + '.csv'))
+        df.to_csv(self.__output_file)
         self.log("closed")
 
     def __on_msg(self, ws, msg):
@@ -86,20 +86,18 @@ def crawl(start_date, end_date, output_folder):
 
     start_date, end_date = map(lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'), (start_date, end_date))
 
-    tasks = []
     date = start_date
-
     while date <= end_date:
-        tasks.append(Task(date, output_folder))
+        datestr = date.strftime('%Y-%m-%d')
+        output_file = os.path.join(output_folder, datestr + '.csv')
+        if os.path.exists(output_file):
+            print('{} already exists, skip this date'.format(datestr))
+        else:
+            task = Task(datestr, output_file)
+            task.start()
+            task.join()
         date += datetime.timedelta(days=1)
-
-    for task in tasks:
-        task.start()
-
-    for task in tasks:
-        task.join()
 
 if __name__ == "__main__":
     args = get_args()
-
     crawl(args.start_date, args.end_date, args.output_folder)
